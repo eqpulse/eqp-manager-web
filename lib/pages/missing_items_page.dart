@@ -178,12 +178,16 @@ class _MissingItemsPageState extends State<MissingItemsPage> {
 
                 if (!mounted) return;
 
+                // שומרים את ה-Messenger לפני סגירת חלון הדיאלוג,
+                // כדי לא להשתמש ב-context שכבר יצא מעץ ה-Widgets.
+                final messenger = ScaffoldMessenger.of(this.context);
+
                 Navigator.of(dialogContext).pop();
                 await loadItems();
 
                 if (!mounted) return;
 
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   const SnackBar(
                     content: Text('הסטטוס עודכן בהצלחה'),
                   ),
@@ -199,7 +203,7 @@ class _MissingItemsPageState extends State<MissingItemsPage> {
 
                 if (!mounted) return;
 
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(this.context).showSnackBar(
                   SnackBar(
                     content: Text('שגיאה בעדכון הסטטוס: $e'),
                   ),
