@@ -429,6 +429,16 @@ class _MissingItemsPageState extends State<MissingItemsPage> {
                                         ),
                                       ),
                                       Expanded(
+                                        flex: 4,
+                                        child: Text(
+                                          'הערה',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
                                         flex: 3,
                                         child: Text(
                                           'נראה לאחרונה',
@@ -520,6 +530,17 @@ class _MissingItemsPageState extends State<MissingItemsPage> {
                                                             item['status'],
                                                           ),
                                                         ),
+                                                      ),
+                                                    ),
+                                                    Expanded(
+                                                      flex: 4,
+                                                      child: Text(
+                                                        (item['status_note']?.toString().trim().isNotEmpty ?? false)
+                                                            ? item['status_note'].toString()
+                                                            : '--',
+                                                        textAlign: TextAlign.center,
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow.ellipsis,
                                                       ),
                                                     ),
                                                     Expanded(
