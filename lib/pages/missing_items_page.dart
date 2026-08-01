@@ -161,32 +161,20 @@ class _MissingItemsPageState extends State<MissingItemsPage> {
               });
 
               final note = noteController.text.trim();
-              final now = DateTime.now().toUtc().toIso8601String();
               const updatedBy = 'manager_web';
 
               try {
-                await supabase
-                    .from('item_status_history')
-                    .update({'is_current': false})
-                    .eq('item_id', itemId)
-                    .eq('is_current', true);
+                final result = await supabase.rpc(
+                  'update_item_business_status',
+                  params: {
+                    'p_item_id': itemId,
+                    'p_status': selectedStatus,
+                    'p_note': note,
+                    'p_updated_by': updatedBy,
+                  },
+                );
 
-                await supabase.from('items').update({
-                  'status': selectedStatus,
-                  'status_note': note.isEmpty ? null : note,
-                  'status_updated_at': now,
-                  'status_updated_by': updatedBy,
-                  'active': selectedStatus != 'inactive',
-                }).eq('id', itemId);
-
-                await supabase.from('item_status_history').insert({
-                  'item_id': itemId,
-                  'status': selectedStatus,
-                  'location_note': note.isEmpty ? null : note,
-                  'created_by': updatedBy,
-                  'created_at': now,
-                  'is_current': true,
-                });
+                debugPrint('RPC RESULT: $result');
 
                 if (!mounted) return;
 
