@@ -136,7 +136,6 @@ class _MissingItemsPageState extends State<MissingItemsPage> {
       'repair',
       'loaned',
       'equipment_center',
-      'inactive',
     }.contains(currentStatus)
         ? currentStatus!
         : 'missing';
@@ -211,6 +210,87 @@ class _MissingItemsPageState extends State<MissingItemsPage> {
               }
             }
 
+            Future<void> deactivateItem() async {
+              if (saving) return;
+
+              final confirmed = await showDialog<bool>(
+                context: dialogContext,
+                builder: (confirmContext) {
+                  return AlertDialog(
+                    title: const Text('הוצא משימוש'),
+                    content: const Text(
+                      'הפריט יוסר מהמלאי הפעיל ולא יוצג בדוחות החוסרים. '
+                      'יש להשתמש בפעולה זו רק לגריטה, מכירה או סיום שימוש.\n\n'
+                      'ניתן להחזיר את הפריט בהמשך דרך המסך "ציוד לא פעיל".',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.of(confirmContext).pop(false),
+                        child: const Text('ביטול'),
+                      ),
+                      FilledButton(
+                        onPressed: () =>
+                            Navigator.of(confirmContext).pop(true),
+                        child: const Text('הוצא משימוש'),
+                      ),
+                    ],
+                  );
+                },
+              );
+
+              if (confirmed != true || !dialogContext.mounted) return;
+
+              setDialogState(() {
+                saving = true;
+              });
+
+              try {
+                await supabase.rpc(
+                  'update_item_business_status',
+                  params: {
+                    'p_item_id': itemId,
+                    'p_status': 'inactive',
+                    'p_note': noteController.text.trim().isEmpty
+                        ? 'הוצא משימוש'
+                        : noteController.text.trim(),
+                    'p_updated_by': 'manager_web',
+                  },
+                );
+
+                if (!mounted) return;
+
+                final messenger = ScaffoldMessenger.of(this.context);
+
+                Navigator.of(dialogContext).pop();
+                await loadItems();
+
+                if (!mounted) return;
+
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('הפריט הוצא משימוש'),
+                  ),
+                );
+              } catch (e) {
+                debugPrint('Deactivate item error: $e');
+
+                if (!dialogContext.mounted) return;
+
+                setDialogState(() {
+                  saving = false;
+                });
+
+                if (!mounted) return;
+
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  SnackBar(
+                    content: Text('שגיאה בהוצאת הפריט משימוש: $e'),
+                  ),
+                );
+              }
+            }
+
             return AlertDialog(
               title: Text(
                 item['item_name']?.toString() ?? 'עדכון פריט',
@@ -247,10 +327,6 @@ class _MissingItemsPageState extends State<MissingItemsPage> {
                           value: 'equipment_center',
                           child: Text('במרכז ציוד'),
                         ),
-                        DropdownMenuItem(
-                          value: 'inactive',
-                          child: Text('יצא משימוש'),
-                        ),
                       ],
                       onChanged: saving
                           ? null
@@ -277,6 +353,15 @@ class _MissingItemsPageState extends State<MissingItemsPage> {
                 ),
               ),
               actions: [
+                TextButton.icon(
+                  onPressed: saving ? null : deactivateItem,
+                  icon: const Icon(Icons.block),
+                  label: const Text('הוצא משימוש'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.red,
+                  ),
+                ),
+                const Spacer(),
                 TextButton(
                   onPressed: saving
                       ? null
@@ -448,6 +533,16 @@ class _MissingItemsPageState extends State<MissingItemsPage> {
                                           ),
                                         ),
                                       ),
+                                      Expanded(
+  flex: 3,
+  child: Text(
+    'זוהה ב־',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+),
                                     ],
                                   ),
                                 ),
@@ -553,6 +648,19 @@ class _MissingItemsPageState extends State<MissingItemsPage> {
                                                             TextAlign.center,
                                                       ),
                                                     ),
+                                                    Expanded(
+  flex: 3,
+  child: Text(
+    item['detected_container']?.toString() ?? '--',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+      fontWeight: FontWeight.bold,
+      color: item['detected_container'] != null
+          ? Colors.orange
+          : Colors.grey,
+    ),
+  ),
+),
                                                   ],
                                                 ),
                                               ),

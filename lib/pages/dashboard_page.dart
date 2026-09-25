@@ -6,6 +6,7 @@ import '../widgets/dashboard_header.dart';
 import '../widgets/kpi_card.dart';
 import '../widgets/sites_table.dart';
 import 'select_storage_page.dart';
+import 'inactive_items_page.dart';
 import 'site_page.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -105,6 +106,15 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  void openInactiveItems() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const InactiveItemsPage(),
+      ),
+    ).then((_) => loadDashboard());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -119,16 +129,17 @@ class _DashboardPageState extends State<DashboardPage> {
             ? const Center(child: CircularProgressIndicator())
             : errorMessage != null
                 ? Center(child: Text(errorMessage!))
-                : Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
+             : SingleChildScrollView(
+    padding: const EdgeInsets.all(24),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
                         DashboardHeader(onRefresh: loadDashboard),
                         const SizedBox(height: 14),
                         DashboardActionBar(
                           onInventory: openInventoryFlow,
                           onDeadStock: openDeadStockFlow,
+                          onInactiveItems: openInactiveItems,
                         ),
                         const SizedBox(height: 16),
                         Row(
@@ -177,7 +188,8 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Expanded(
+                        SizedBox(
+  height: 400,
                           child: SitesTable(
                             sites: sites,
                             toInt: toInt,

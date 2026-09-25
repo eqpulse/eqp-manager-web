@@ -33,6 +33,7 @@ class _SelectStoragePageState extends State<SelectStoragePage> {
 
   String? selectedSiteId;
   String? selectedSiteName;
+  String? selectedStorageId;
   String? selectedStorageCode;
   String? selectedStorageName;
 
@@ -46,7 +47,7 @@ class _SelectStoragePageState extends State<SelectStoragePage> {
     try {
       final response = await supabase
           .from('sites')
-          .select('id, site_name, client_name')
+          .select('id, site_name')
           .order('site_name');
 
       if (!mounted) return;
@@ -72,6 +73,7 @@ class _SelectStoragePageState extends State<SelectStoragePage> {
     setState(() {
       loadingStorageUnits = true;
       storageUnits = [];
+      selectedStorageId = null;
       selectedStorageCode = null;
       selectedStorageName = null;
       errorMessage = null;
@@ -80,7 +82,7 @@ class _SelectStoragePageState extends State<SelectStoragePage> {
     try {
       final response = await supabase
           .from('containers')
-          .select()
+          .select('id, container_code, location_description')
           .eq('site_id', siteId)
           .order('container_code');
 
@@ -116,7 +118,9 @@ class _SelectStoragePageState extends State<SelectStoragePage> {
           : 'מלאי שלא זז';
 
   void openSelectedPage() {
-    if (selectedSiteName == null || selectedStorageCode == null) {
+    if (selectedSiteName == null ||
+        selectedStorageId == null ||
+        selectedStorageCode == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('יש לבחור אתר ויחידת אחסון'),
@@ -190,16 +194,10 @@ class _SelectStoragePageState extends State<SelectStoragePage> {
                                         site['id']?.toString() ?? '';
                                     final siteName =
                                         site['site_name']?.toString() ?? '';
-                                    final clientName =
-                                        site['client_name']?.toString() ?? '';
 
                                     return DropdownMenuItem<String>(
                                       value: siteId,
-                                      child: Text(
-                                        clientName.isEmpty
-                                            ? siteName
-                                            : '$siteName — $clientName',
-                                      ),
+                                      child: Text(siteName),
                                     );
                                   }).toList(),
                                   onChanged: (siteId) {
@@ -230,33 +228,38 @@ class _SelectStoragePageState extends State<SelectStoragePage> {
                                       labelText: 'יחידת אחסון',
                                       border: OutlineInputBorder(),
                                     ),
-                                    value: selectedStorageCode,
+                                    value: selectedStorageId,
                                     items: storageUnits.map((unit) {
+                                      final id =
+                                          unit['id']?.toString() ?? '';
                                       final code = unit['container_code']
                                               ?.toString() ??
                                           '';
                                       final name = storageDisplayName(unit);
 
                                       return DropdownMenuItem<String>(
-                                        value: code,
+                                        value: id,
                                         child: Text('$code — $name'),
                                       );
                                     }).toList(),
                                     onChanged: selectedSiteId == null
                                         ? null
-                                        : (code) {
-                                            if (code == null) return;
+                                        : (storageId) {
+                                            if (storageId == null) return;
 
                                             final unit =
                                                 storageUnits.firstWhere(
                                               (row) =>
-                                                  row['container_code']
-                                                      ?.toString() ==
-                                                  code,
+                                                  row['id']?.toString() ==
+                                                  storageId,
                                             );
 
                                             setState(() {
-                                              selectedStorageCode = code;
+                                              selectedStorageId = storageId;
+                                              selectedStorageCode =
+                                                  unit['container_code']
+                                                          ?.toString() ??
+                                                      '';
                                               selectedStorageName =
                                                   storageDisplayName(unit);
                                             });

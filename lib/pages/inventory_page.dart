@@ -24,6 +24,10 @@ class _InventoryPageState extends State<InventoryPage> {
   bool loading = true;
   String? errorMessage;
   List<Map<String, dynamic>> items = [];
+
+  List<Map<String, dynamic>> get presentItems =>
+    items.where((item) => item['is_missing'] == false).toList();
+
   final ScrollController _itemsScrollController = ScrollController();
 
   @override
@@ -42,6 +46,7 @@ class _InventoryPageState extends State<InventoryPage> {
           .order('item_name');
 
           debugPrint('Inventory rows: ${response.length}');
+
 
       setState(() {
         items = List<Map<String, dynamic>>.from(response);
@@ -73,12 +78,14 @@ class _InventoryPageState extends State<InventoryPage> {
   }
 
   double get totalValue =>
-      items.fold(0, (sum, item) => sum + toDouble(item['cost']));
+      presentItems.fold(0, (sum, item) => sum + toDouble(item['cost']));
 
   String get scanDate {
     if (items.isEmpty) return '--';
-    final raw = items.first['last_seen'];
+
+    final raw = items.first['scan_time'];
     if (raw == null) return '--';
+
     try {
       final dt = DateTime.parse(raw.toString()).toLocal();
       return intl.DateFormat('dd/MM/yyyy   HH:mm').format(dt);
@@ -95,7 +102,7 @@ class _InventoryPageState extends State<InventoryPage> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF7F4FA),
         appBar: AppBar(
-          title: Text('ספירת מלאי ${widget.storageCode}'),
+         title: Text('ספירת מלאי ${widget.storageCode}'),
           centerTitle: true,
         ),
         body: loading
@@ -136,7 +143,7 @@ class _InventoryPageState extends State<InventoryPage> {
                                 _InfoLine(
                                   icon: Icons.inventory_2_outlined,
                                   label: 'פריטים שנספרו',
-                                  value: '${items.length}',
+                                value: '${presentItems.length}',
                                 ),
                                 _InfoLine(
                                   icon: Icons.payments_outlined,
@@ -201,7 +208,7 @@ class _InventoryPageState extends State<InventoryPage> {
                                 ),
                                 const Divider(height: 1),
                                 Expanded(
-                                  child: items.isEmpty
+                                  child: presentItems.isEmpty
                                       ? const Center(
                                           child: Text(
                                             'לא נמצאו פריטים בספירה האחרונה',
@@ -213,51 +220,40 @@ class _InventoryPageState extends State<InventoryPage> {
                                           child: ListView.separated(
                                             controller: _itemsScrollController,
                                             primary: false,
-                                            itemCount: items.length,
+                                            itemCount: presentItems.length,
                                             separatorBuilder: (_, __) =>
                                                 const Divider(height: 1),
                                             itemBuilder: (context, index) {
-                                            final item = items[index];
-                                            return Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 16,
-                                                vertical: 12,
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  Expanded(
-                                                    flex: 4,
-                                                    child: Text(
-                                                      item['item_name']
-                                                              ?.toString() ??
-                                                          '',
+                                              final item = presentItems[index];
+                                              return Padding(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 12,
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      flex: 4,
+                                                      child: Text(item['item_name']?.toString() ?? ''),
                                                     ),
-                                                  ),
-                                                  Expanded(
-                                                    flex: 3,
-                                                    child: Text(
-                                                      item['ble_mac_address']
-                                                              ?.toString() ??
-                                                          '',
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                    ),
-                                                  ),
-                                                  Expanded(
-                                                    flex: 2,
-                                                    child: Text(
-                                                      money(item['cost']),
-                                                      textAlign: TextAlign.end,
-                                                      style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
+                                                    Expanded(
+                                                      flex: 3,
+                                                      child: Text(
+                                                        item['ble_mac_address']?.toString() ?? '',
+                                                        textAlign: TextAlign.center,
                                                       ),
                                                     ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
+                                                    Expanded(
+                                                      flex: 2,
+                                                      child: Text(
+                                                        money(item['cost']),
+                                                        textAlign: TextAlign.end,
+                                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
                                             },
                                           ),
                                         ),
