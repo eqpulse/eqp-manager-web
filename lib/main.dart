@@ -136,6 +136,7 @@ class _LoginPageState extends State<LoginPage> {
   final passwordController = TextEditingController();
   bool loading = false;
   bool recoveryMode = false;
+  bool showLoginPassword = false;
   String? errorMessage;
   String? successMessage;
 
@@ -259,11 +260,19 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: 16),
                         TextField(
                           controller: passwordController,
-                          obscureText: true,
+                          obscureText: !showLoginPassword,
                           textDirection: TextDirection.ltr,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'סיסמה',
-                            border: OutlineInputBorder(),
+                            border: const OutlineInputBorder(),
+                            suffixIcon: IconButton(
+                              tooltip: showLoginPassword ? 'הסתר סיסמה' : 'הצג סיסמה',
+                              icon: Icon(showLoginPassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility),
+                              onPressed: () => setState(() =>
+                                  showLoginPassword = !showLoginPassword),
+                            ),
                           ),
                           onSubmitted: (_) => signIn(),
                         ),
@@ -328,6 +337,8 @@ class SetPasswordPage extends StatefulWidget {
 class _SetPasswordPageState extends State<SetPasswordPage> {
   final passwordController = TextEditingController();
   final confirmController = TextEditingController();
+  bool showNewPassword = false;
+  bool showConfirmPassword = false;
   bool loading = false;
   String? errorMessage;
 
@@ -400,21 +411,37 @@ class _SetPasswordPageState extends State<SetPasswordPage> {
                       const SizedBox(height: 20),
                       TextField(
                         controller: passwordController,
-                        obscureText: true,
+                        obscureText: !showNewPassword,
                         textDirection: TextDirection.ltr,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'סיסמה חדשה (לפחות 12 תווים)',
-                          border: OutlineInputBorder(),
+                          border: const OutlineInputBorder(),
+                          suffixIcon: IconButton(
+                            tooltip: showNewPassword ? 'הסתר סיסמה' : 'הצג סיסמה',
+                            icon: Icon(showNewPassword
+                                ? Icons.visibility_off
+                                : Icons.visibility),
+                            onPressed: () => setState(() =>
+                                showNewPassword = !showNewPassword),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
                       TextField(
                         controller: confirmController,
-                        obscureText: true,
+                        obscureText: !showConfirmPassword,
                         textDirection: TextDirection.ltr,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'אימות סיסמה',
-                          border: OutlineInputBorder(),
+                          border: const OutlineInputBorder(),
+                          suffixIcon: IconButton(
+                            tooltip: showConfirmPassword ? 'הסתר סיסמה' : 'הצג סיסמה',
+                            icon: Icon(showConfirmPassword
+                                ? Icons.visibility_off
+                                : Icons.visibility),
+                            onPressed: () => setState(() =>
+                                showConfirmPassword = !showConfirmPassword),
+                          ),
                         ),
                         onSubmitted: (_) => savePassword(),
                       ),
