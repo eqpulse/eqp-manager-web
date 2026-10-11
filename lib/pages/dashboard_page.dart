@@ -21,12 +21,82 @@ class _DashboardPageState extends State<DashboardPage> {
 
   bool loading = true;
   String? errorMessage;
+  String? customerName;
+  String? customerNameError;
   List<Map<String, dynamic>> sites = [];
 
   @override
   void initState() {
     super.initState();
+    loadCustomerName();
     loadDashboard();
+  }
+
+  Future<void> loadCustomerName() async {
+    if (mounted) {
+      setState(() {
+        customerName = null;
+        customerNameError = null;
+      });
+    }
+
+    String stage = 'auth';
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        debugPrint('EQP customer lookup: no authenticated user');
+        if (mounted) setState(() => customerNameError = 'לא מחובר משתמש');
+        return;
+      }
+
+      stage = 'eqp_users';
+      final membership = await supabase
+          .from('eqp_users')
+          .select('customer_id')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      final customerId = membership?['customer_id']?.toString();
+      if (customerId == null || customerId.isEmpty) {
+        debugPrint('EQP customer lookup: no visible eqp_users membership');
+        if (mounted) {
+          setState(() => customerNameError = 'לא נמצא שיוך לקוח למשתמש המחובר');
+        }
+        return;
+      }
+
+      stage = 'customers';
+      final customer = await supabase
+          .from('customers')
+          .select('company_name')
+          .eq('id', customerId)
+          .maybeSingle();
+
+      if (!mounted) return;
+      final name = customer?['company_name']?.toString().trim();
+      if (name == null || name.isEmpty) {
+        debugPrint('EQP customer lookup: customer record not visible or name empty');
+        setState(() => customerNameError = 'שם החברה לא נמצא או שאין הרשאת צפייה');
+        return;
+      }
+
+      debugPrint('EQP customer lookup: company name loaded successfully');
+      setState(() {
+        customerName = name;
+        customerNameError = null;
+      });
+    } on PostgrestException catch (e) {
+      debugPrint('EQP customer lookup failed at $stage: code=${e.code}; message=${e.message}');
+      if (mounted) {
+        setState(() => customerNameError =
+            'שגיאה בשליפת פרטי החברה ($stage, ${e.code ?? 'unknown'})');
+      }
+    } catch (e) {
+      debugPrint('EQP customer lookup failed at $stage: $e');
+      if (mounted) {
+        setState(() => customerNameError = 'לא ניתן לטעון שם לקוח ($stage)');
+      }
+    }
   }
 
   Future<void> loadDashboard() async {
@@ -134,7 +204,28 @@ class _DashboardPageState extends State<DashboardPage> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-                        DashboardHeader(onRefresh: loadDashboard),
+                        DashboardHeader(onRefresh: () {
+                          loadCustomerName();
+                          loadDashboard();
+                        }),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Icon(Icons.business_outlined, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                customerName != null
+                                    ? 'לקוח: $customerName'
+                                    : customerNameError ?? 'טוען פרטי לקוח...',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 14),
                         DashboardActionBar(
                           onInventory: openInventoryFlow,
