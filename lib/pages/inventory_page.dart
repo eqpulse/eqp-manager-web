@@ -184,6 +184,16 @@ class _InventoryPageState extends State<InventoryPage> {
                                         ),
                                       ),
                                       Expanded(
+  flex: 2,
+  child: Text(
+    'מספר סידורי',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+),
+                                      Expanded(
                                         flex: 3,
                                         child: Text(
                                           'תג BLE',
@@ -236,6 +246,13 @@ class _InventoryPageState extends State<InventoryPage> {
                                                       flex: 4,
                                                       child: Text(item['item_name']?.toString() ?? ''),
                                                     ),
+                                                    Expanded(
+  flex: 2,
+  child: Text(
+    item['serial_number']?.toString() ?? '',
+    textAlign: TextAlign.center,
+  ),
+),
                                                     Expanded(
                                                       flex: 3,
                                                       child: Text(
