@@ -8,6 +8,7 @@ import '../widgets/sites_table.dart';
 import 'select_storage_page.dart';
 import 'inactive_items_page.dart';
 import 'site_page.dart';
+import 'equipment_transfers_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -232,6 +233,27 @@ class _DashboardPageState extends State<DashboardPage> {
                           onDeadStock: openDeadStockFlow,
                           onInactiveItems: openInactiveItems,
                         ),
+                        const SizedBox(height: 12),
+
+ElevatedButton.icon(
+onPressed: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const EquipmentTransfersPage(),
+    ),
+  );
+},
+icon: const Icon(Icons.swap_horiz),
+label: const Text('העברות ציוד לאישור'),
+style: ElevatedButton.styleFrom(
+  padding: const EdgeInsets.symmetric(vertical: 16),
+  textStyle: const TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.bold,
+  ),
+),
+),
                         const SizedBox(height: 16),
                         Row(
                           children: [
@@ -300,10 +322,10 @@ class _DashboardPageState extends State<DashboardPage> {
                             },
                           ),
                         ),
-                      ],
+                         ],
                     ),
                   ),
-      ),
-    );
+                ),
+              );
   }
 }

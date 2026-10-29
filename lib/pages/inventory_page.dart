@@ -24,6 +24,7 @@ class _InventoryPageState extends State<InventoryPage> {
   bool loading = true;
   String? errorMessage;
   List<Map<String, dynamic>> items = [];
+  String lastSyncDate = '--';
 
   List<Map<String, dynamic>> get presentItems =>
     items.where((item) => item['is_missing'] == false).toList();
