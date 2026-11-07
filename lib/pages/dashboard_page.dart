@@ -1,3 +1,7 @@
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'package:excel/excel.dart';
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -100,6 +104,159 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
+  Future<void> exportInventoryExcel() async {
+  debugPrint('EXCEL BUTTON PRESSED');
+try {
+ final scope = await showDialog<String>(
+  context: context,
+  builder: (dialogContext) => Directionality(
+    textDirection: TextDirection.rtl,
+    child: SimpleDialog(
+      title: const Text('בחר היקף דוח מלאי'),
+      children: [
+        SimpleDialogOption(
+          onPressed: () => Navigator.pop(dialogContext, 'all'),
+          child: const Text('כל החברה'),
+        ),
+        SimpleDialogOption(
+          onPressed: () => Navigator.pop(dialogContext, 'site'),
+          child: const Text('אתר מסוים'),
+        ),
+        SimpleDialogOption(
+          onPressed: () => Navigator.pop(dialogContext, 'container'),
+          child: const Text('מחסן / מכולה מסוימים'),
+        ),
+      ],
+    ),
+  ),
+);
+
+  if (scope == null) return;
+
+final rows = await supabase
+    .from('v_inventory_export')
+    .select()
+    .order('site_name');
+
+if (scope == 'site') {
+  final siteNames = rows
+      .map((item) => item['site_name']?.toString() ?? '')
+      .where((name) => name.isNotEmpty)
+      .toSet()
+      .toList()
+    ..sort();
+
+  if (!mounted) return;
+
+  final selectedSite = await showDialog<String>(
+  context: context,
+  builder: (dialogContext) => Directionality(
+    textDirection: TextDirection.rtl,
+    child: SimpleDialog(
+      title: const Text('בחר אתר'),
+      children: siteNames.map((name) {
+        return SimpleDialogOption(
+          onPressed: () => Navigator.pop(dialogContext, name),
+          child: Text(name),
+        );
+      }).toList(),
+    ),
+  ),
+);
+
+if (selectedSite == null) return;
+
+rows.removeWhere(
+  (item) => item['site_name'] != selectedSite,
+);
+}
+
+if (scope == 'container') {
+  final containers = rows
+      .map((item) => {
+            'site': item['site_name']?.toString() ?? '',
+            'container': item['container_code']?.toString() ?? '',
+          })
+      .where((item) => item['container']!.isNotEmpty)
+      .toList();
+
+  final uniqueContainers = {
+    for (final item in containers)
+      '${item['site']}|${item['container']}': item,
+  }.values.toList();
+
+  if (!mounted) return;
+
+  final selected = await showDialog<Map<String, String>>(
+  context: context,
+  builder: (dialogContext) => Directionality(
+    textDirection: TextDirection.rtl,
+    child: SimpleDialog(
+      title: const Text('בחר מחסן / מכולה'),
+      children: uniqueContainers.map((item) {
+        return SimpleDialogOption(
+          onPressed: () => Navigator.pop(dialogContext, item),
+          child: Text('${item['site']} — ${item['container']}'),
+        );
+      }).toList(),
+    ),
+  ),
+);
+  if (selected == null) return;
+
+  rows.removeWhere(
+    (item) =>
+        item['site_name']?.toString() != selected['site'] ||
+        item['container_code']?.toString() != selected['container'],
+  );
+}
+        debugPrint('EXCEL ROWS: ${rows.length}');
+
+    final excel = Excel.createExcel();
+excel.rename('Sheet1', 'Inventory');
+final sheet = excel['Inventory'];
+sheet.isRTL = true;
+
+    sheet.appendRow([
+      TextCellValue('אתר'),
+      TextCellValue('מכולה'),
+      TextCellValue('שם ציוד'),
+      TextCellValue('מספר סידורי'),
+      TextCellValue('עלות'),
+      TextCellValue('סטטוס'),
+      TextCellValue('נראה לאחרונה'),
+    ]);
+
+    for (final item in rows) {
+      sheet.appendRow([
+        TextCellValue(item['site_name']?.toString() ?? ''),
+        TextCellValue(item['container_code']?.toString() ?? ''),
+        TextCellValue(item['item_name']?.toString() ?? ''),
+        TextCellValue(item['serial_number']?.toString() ?? ''),
+        TextCellValue(item['cost']?.toString() ?? ''),
+        TextCellValue(item['status']?.toString() ?? ''),
+        TextCellValue(
+  item['last_seen'] == null
+      ? 'לא נראה'
+      : '${DateTime.parse(item['last_seen'].toString()).toLocal().day.toString().padLeft(2, '0')}/${DateTime.parse(item['last_seen'].toString()).toLocal().month.toString().padLeft(2, '0')}/${DateTime.parse(item['last_seen'].toString()).toLocal().year} ${DateTime.parse(item['last_seen'].toString()).toLocal().hour.toString().padLeft(2, '0')}:${DateTime.parse(item['last_seen'].toString()).toLocal().minute.toString().padLeft(2, '0')}',
+),
+      ]);
+    }
+
+    final bytes = excel.encode();
+    if (bytes == null) return;
+
+    await FileSaver.instance.saveFile(
+      name: 'EQP_Inventory',
+      bytes: Uint8List.fromList(bytes),
+      fileExtension: 'xlsx',
+      mimeType: MimeType.microsoftExcel,
+    );
+  } catch (e) {
+    debugPrint('Excel export error: $e');
+  }
+}
+
   Future<void> loadDashboard() async {
     setState(() {
       loading = true;
@@ -111,6 +268,13 @@ class _DashboardPageState extends State<DashboardPage> {
           .from('v_missing_by_site_live')
           .select()
           .order('missing_value', ascending: false);
+
+          final inventoryTest = await supabase
+    .from('v_inventory_export')
+    .select('item_id, item_name, site_name, container_code');
+
+debugPrint('EQP INVENTORY TEST: ${inventoryTest.length} items');
+debugPrint('EQP INVENTORY DATA: $inventoryTest');
 
       if (!mounted) return;
 
@@ -205,10 +369,15 @@ class _DashboardPageState extends State<DashboardPage> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-                        DashboardHeader(onRefresh: () {
-                          loadCustomerName();
-                          loadDashboard();
-                        }),
+                      DashboardHeader(
+  onRefresh: () {
+    loadCustomerName();
+    loadDashboard();
+  },
+  onLogout: () async {
+    await Supabase.instance.client.auth.signOut();
+  },
+),
                         const SizedBox(height: 10),
                         Row(
                           children: [
@@ -229,30 +398,37 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                         const SizedBox(height: 14),
                         DashboardActionBar(
-                          onInventory: openInventoryFlow,
-                          onDeadStock: openDeadStockFlow,
-                          onInactiveItems: openInactiveItems,
-                        ),
-                        const SizedBox(height: 12),
+  onInventory: openInventoryFlow,
+  onDeadStock: openDeadStockFlow,
+  onInactiveItems: openInactiveItems,
+),
+const SizedBox(height: 12),
 
 ElevatedButton.icon(
-onPressed: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => const EquipmentTransfersPage(),
-    ),
-  );
-},
-icon: const Icon(Icons.swap_horiz),
-label: const Text('העברות ציוד לאישור'),
-style: ElevatedButton.styleFrom(
-  padding: const EdgeInsets.symmetric(vertical: 16),
-  textStyle: const TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.bold,
-  ),
+  onPressed: exportInventoryExcel,
+  icon: const Icon(Icons.download),
+  label: const Text('ייצוא מלאי לאקסל'),
 ),
+const SizedBox(height: 12),
+
+ElevatedButton.icon(
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const EquipmentTransfersPage(),
+      ),
+    );
+  },
+  icon: const Icon(Icons.swap_horiz),
+  label: const Text('העברות ציוד לאישור'),
+  style: ElevatedButton.styleFrom(
+    padding: const EdgeInsets.symmetric(vertical: 16),
+    textStyle: const TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
 ),
                         const SizedBox(height: 16),
                         Row(

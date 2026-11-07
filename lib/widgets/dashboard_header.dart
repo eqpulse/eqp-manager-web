@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 class DashboardHeader extends StatelessWidget {
   final VoidCallback onRefresh;
+  final VoidCallback onLogout;
 
   const DashboardHeader({
     super.key,
     required this.onRefresh,
+    required this.onLogout,
   });
 
   @override
@@ -26,6 +28,12 @@ class DashboardHeader extends StatelessWidget {
           onPressed: onRefresh,
           icon: const Icon(Icons.refresh, size: 18),
           label: const Text('רענון דשבורד'),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: onLogout,
+          icon: const Icon(Icons.logout),
+          label: const Text('התנתקות'),
         ),
       ],
     );
