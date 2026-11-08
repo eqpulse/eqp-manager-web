@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:excel/excel.dart';
 import 'package:file_saver/file_saver.dart';
@@ -213,8 +213,8 @@ if (scope == 'container') {
         debugPrint('EXCEL ROWS: ${rows.length}');
 
     final excel = Excel.createExcel();
-excel.rename('Sheet1', 'Inventory');
-final sheet = excel['Inventory'];
+excel.rename('Sheet1', 'מלאי ציוד');
+final sheet = excel['מלאי ציוד'];
 sheet.isRTL = true;
 
     sheet.appendRow([
@@ -226,6 +226,21 @@ sheet.isRTL = true;
       TextCellValue('סטטוס'),
       TextCellValue('נראה לאחרונה'),
     ]);
+
+    final scopedInventoryIds = rows
+    .map((item) => item['item_id']?.toString())
+    .whereType<String>()
+    .toSet();
+
+    final missingIdsForInventory = (await supabase
+        .from('v_missing_items_export')
+        .select('item_id'))
+    .map((item) => item['item_id']?.toString())
+    .toSet();
+
+rows.removeWhere(
+  (item) => missingIdsForInventory.contains(item['item_id']?.toString()),
+);
 
     for (final item in rows) {
       sheet.appendRow([
@@ -242,6 +257,70 @@ sheet.isRTL = true;
 ),
       ]);
     }
+
+    // Second Excel sheet: Missing equipment
+final missingRows = await supabase
+    .from('v_missing_items_export')
+    .select()
+    .order('site_name');
+
+    final missingIds = missingRows
+    .map((item) => item['item_id']?.toString())
+    .whereType<String>()
+    .toSet();
+
+final inventoryIds = rows
+    .map((item) => item['item_id']?.toString())
+    .whereType<String>()
+    .toSet();
+
+// Apply the same scope selected for the inventory sheet.
+missingRows.removeWhere(
+  (item) => !scopedInventoryIds.contains(item['item_id']?.toString()),
+);
+
+rows.removeWhere(
+  (item) => missingIds.contains(item['item_id']?.toString()),
+);
+
+final missingSheet = excel['ציוד חסר'];
+missingSheet.isRTL = true;
+
+missingSheet.appendRow([
+  TextCellValue('אתר'),
+  TextCellValue('מכולה'),
+  TextCellValue('שם ציוד'),
+  TextCellValue('מספר סידורי'),
+  TextCellValue('עלות'),
+  TextCellValue('סריקה אחרונה'),
+]);
+
+for (final item in missingRows) {
+  missingSheet.appendRow([
+    TextCellValue(item['site_name']?.toString() ?? ''),
+    TextCellValue(item['container_code']?.toString() ?? ''),
+    TextCellValue(item['item_name']?.toString() ?? ''),
+    TextCellValue(item['serial_number']?.toString() ?? ''),
+    TextCellValue(item['cost']?.toString() ?? ''),
+    TextCellValue(
+  item['latest_scan_completed_at'] == null
+      ? 'אין סריקה'
+      : (() {
+          final dt = DateTime.parse(
+            item['latest_scan_completed_at'].toString(),
+          ).toLocal();
+
+          return '${dt.day.toString().padLeft(2, '0')}/'
+              '${dt.month.toString().padLeft(2, '0')}/'
+              '${dt.year} '
+              '${dt.hour.toString().padLeft(2, '0')}:'
+              '${dt.minute.toString().padLeft(2, '0')}';
+        })(),
+),
+  ]);
+}
+
+debugPrint('EXCEL MISSING ROWS: ${missingRows.length}');
 
     final bytes = excel.encode();
     if (bytes == null) return;
