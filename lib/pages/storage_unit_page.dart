@@ -1,8 +1,10 @@
+
 import 'package:flutter/material.dart';
 
 import 'dead_stock_page.dart';
 import 'inventory_page.dart';
 import 'missing_items_page.dart';
+import 'detected_from_other_page.dart';
 
 class StorageUnitPage extends StatelessWidget {
   final String siteName;
@@ -103,6 +105,26 @@ class StorageUnitPage extends StatelessWidget {
                           ),
                         );
                       },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _ActionCard(
+                      icon: Icons.move_to_inbox_outlined,
+                      title: 'ציוד שזוהה ממחסן אחר',
+subtitle: 'ציוד שנקלט ומשויך למחסן אחר',
+onTap: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => DetectedFromOtherPage(
+        siteName: siteName,
+        storageCode: storageCode,
+        storageName: storageName,
+      ),
+    ),
+  );
+},
                     ),
                   ),
                 ],

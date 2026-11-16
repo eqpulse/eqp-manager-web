@@ -1,9 +1,9 @@
-﻿import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
-import 'package:excel/excel.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:excel/excel.dart';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 import '../widgets/dashboard_action_bar.dart';
 import '../widgets/dashboard_header.dart';
@@ -12,7 +12,7 @@ import '../widgets/sites_table.dart';
 import 'select_storage_page.dart';
 import 'inactive_items_page.dart';
 import 'site_page.dart';
-import 'equipment_transfers_page.dart';
+import 'all_sites_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -23,86 +23,6 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   final supabase = Supabase.instance.client;
-
-  bool loading = true;
-  String? errorMessage;
-  String? customerName;
-  String? customerNameError;
-  List<Map<String, dynamic>> sites = [];
-
-  @override
-  void initState() {
-    super.initState();
-    loadCustomerName();
-    loadDashboard();
-  }
-
-  Future<void> loadCustomerName() async {
-    if (mounted) {
-      setState(() {
-        customerName = null;
-        customerNameError = null;
-      });
-    }
-
-    String stage = 'auth';
-    try {
-      final user = supabase.auth.currentUser;
-      if (user == null) {
-        debugPrint('EQP customer lookup: no authenticated user');
-        if (mounted) setState(() => customerNameError = 'לא מחובר משתמש');
-        return;
-      }
-
-      stage = 'eqp_users';
-      final membership = await supabase
-          .from('eqp_users')
-          .select('customer_id')
-          .eq('id', user.id)
-          .maybeSingle();
-
-      final customerId = membership?['customer_id']?.toString();
-      if (customerId == null || customerId.isEmpty) {
-        debugPrint('EQP customer lookup: no visible eqp_users membership');
-        if (mounted) {
-          setState(() => customerNameError = 'לא נמצא שיוך לקוח למשתמש המחובר');
-        }
-        return;
-      }
-
-      stage = 'customers';
-      final customer = await supabase
-          .from('customers')
-          .select('company_name')
-          .eq('id', customerId)
-          .maybeSingle();
-
-      if (!mounted) return;
-      final name = customer?['company_name']?.toString().trim();
-      if (name == null || name.isEmpty) {
-        debugPrint('EQP customer lookup: customer record not visible or name empty');
-        setState(() => customerNameError = 'שם החברה לא נמצא או שאין הרשאת צפייה');
-        return;
-      }
-
-      debugPrint('EQP customer lookup: company name loaded successfully');
-      setState(() {
-        customerName = name;
-        customerNameError = null;
-      });
-    } on PostgrestException catch (e) {
-      debugPrint('EQP customer lookup failed at $stage: code=${e.code}; message=${e.message}');
-      if (mounted) {
-        setState(() => customerNameError =
-            'שגיאה בשליפת פרטי החברה ($stage, ${e.code ?? 'unknown'})');
-      }
-    } catch (e) {
-      debugPrint('EQP customer lookup failed at $stage: $e');
-      if (mounted) {
-        setState(() => customerNameError = 'לא ניתן לטעון שם לקוח ($stage)');
-      }
-    }
-  }
 
   Future<void> exportInventoryExcel() async {
   debugPrint('EXCEL BUTTON PRESSED');
@@ -336,6 +256,86 @@ debugPrint('EXCEL MISSING ROWS: ${missingRows.length}');
   }
 }
 
+  bool loading = true;
+  String? errorMessage;
+  String? customerName;
+  String? customerNameError;
+  List<Map<String, dynamic>> sites = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadCustomerName();
+    loadDashboard();
+  }
+
+  Future<void> loadCustomerName() async {
+    if (mounted) {
+      setState(() {
+        customerName = null;
+        customerNameError = null;
+      });
+    }
+
+    String stage = 'auth';
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        debugPrint('EQP customer lookup: no authenticated user');
+        if (mounted) setState(() => customerNameError = 'לא מחובר משתמש');
+        return;
+      }
+
+      stage = 'eqp_users';
+      final membership = await supabase
+          .from('eqp_users')
+          .select('customer_id')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      final customerId = membership?['customer_id']?.toString();
+      if (customerId == null || customerId.isEmpty) {
+        debugPrint('EQP customer lookup: no visible eqp_users membership');
+        if (mounted) {
+          setState(() => customerNameError = 'לא נמצא שיוך לקוח למשתמש המחובר');
+        }
+        return;
+      }
+
+      stage = 'customers';
+      final customer = await supabase
+          .from('customers')
+          .select('company_name')
+          .eq('id', customerId)
+          .maybeSingle();
+
+      if (!mounted) return;
+      final name = customer?['company_name']?.toString().trim();
+      if (name == null || name.isEmpty) {
+        debugPrint('EQP customer lookup: customer record not visible or name empty');
+        setState(() => customerNameError = 'שם החברה לא נמצא או שאין הרשאת צפייה');
+        return;
+      }
+
+      debugPrint('EQP customer lookup: company name loaded successfully');
+      setState(() {
+        customerName = name;
+        customerNameError = null;
+      });
+    } on PostgrestException catch (e) {
+      debugPrint('EQP customer lookup failed at $stage: code=${e.code}; message=${e.message}');
+      if (mounted) {
+        setState(() => customerNameError =
+            'שגיאה בשליפת פרטי החברה ($stage, ${e.code ?? 'unknown'})');
+      }
+    } catch (e) {
+      debugPrint('EQP customer lookup failed at $stage: $e');
+      if (mounted) {
+        setState(() => customerNameError = 'לא ניתן לטעון שם לקוח ($stage)');
+      }
+    }
+  }
+
   Future<void> loadDashboard() async {
     setState(() {
       loading = true;
@@ -347,13 +347,6 @@ debugPrint('EXCEL MISSING ROWS: ${missingRows.length}');
           .from('v_missing_by_site_live')
           .select()
           .order('missing_value', ascending: false);
-
-          final inventoryTest = await supabase
-    .from('v_inventory_export')
-    .select('item_id, item_name, site_name, container_code');
-
-debugPrint('EQP INVENTORY TEST: ${inventoryTest.length} items');
-debugPrint('EQP INVENTORY DATA: $inventoryTest');
 
       if (!mounted) return;
 
@@ -448,7 +441,7 @@ debugPrint('EQP INVENTORY DATA: $inventoryTest');
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-                      DashboardHeader(
+                        DashboardHeader(
   onRefresh: () {
     loadCustomerName();
     loadDashboard();
@@ -476,40 +469,31 @@ debugPrint('EQP INVENTORY DATA: $inventoryTest');
                           ],
                         ),
                         const SizedBox(height: 14),
-                        DashboardActionBar(
-  onInventory: openInventoryFlow,
-  onDeadStock: openDeadStockFlow,
-  onInactiveItems: openInactiveItems,
+                      Align(
+  alignment: Alignment.centerRight,
+  child: ElevatedButton.icon(
+    onPressed: exportInventoryExcel,
+    icon: const Icon(Icons.file_download_outlined),
+    label: const Text('ייצוא מלאי לאקסל'),
+  ),
 ),
-const SizedBox(height: 12),
-
-ElevatedButton.icon(
-  onPressed: exportInventoryExcel,
-  icon: const Icon(Icons.download),
-  label: const Text('ייצוא מלאי לאקסל'),
-),
-const SizedBox(height: 12),
+const SizedBox(height: 16),
 
 ElevatedButton.icon(
   onPressed: () {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const EquipmentTransfersPage(),
+        builder: (_) => const AllSitesPage(),
       ),
     );
   },
-  icon: const Icon(Icons.swap_horiz),
-  label: const Text('העברות ציוד לאישור'),
-  style: ElevatedButton.styleFrom(
-    padding: const EdgeInsets.symmetric(vertical: 16),
-    textStyle: const TextStyle(
-      fontSize: 18,
-      fontWeight: FontWeight.bold,
-    ),
-  ),
+  icon: const Icon(Icons.business_outlined),
+  label: const Text('אתרים ומחסנים'),
 ),
-                        const SizedBox(height: 16),
+
+const SizedBox(height: 16),
+
                         Row(
                           children: [
                             Expanded(
@@ -577,10 +561,10 @@ ElevatedButton.icon(
                             },
                           ),
                         ),
-                         ],
+                      ],
                     ),
                   ),
-                ),
-              );
+      ),
+    );
   }
 }

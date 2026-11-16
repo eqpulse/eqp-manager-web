@@ -484,6 +484,16 @@ class _MissingItemsPageState extends State<MissingItemsPage> {
                                         ),
                                       ),
                                       Expanded(
+  flex: 3,
+  child: Text(
+    'מספר סידורי',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+),
+                                      Expanded(
                                         flex: 3,
                                         child: Text(
                                           'תג BLE',
@@ -586,6 +596,13 @@ class _MissingItemsPageState extends State<MissingItemsPage> {
                                                             '',
                                                       ),
                                                     ),
+                                                    Expanded(
+  flex: 3,
+  child: Text(
+    item['serial_number']?.toString() ?? '--',
+    textAlign: TextAlign.center,
+  ),
+),
                                                     Expanded(
                                                       flex: 3,
                                                       child: Text(
