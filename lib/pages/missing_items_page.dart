@@ -465,8 +465,16 @@ class _MissingItemsPageState extends State<MissingItemsPage> {
                         const SizedBox(height: 12),
                         Expanded(
                           child: Card(
-                            child: Column(
-                              children: [
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                return SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: SizedBox(
+                                    width: constraints.maxWidth < 1100
+                                        ? 1100
+                                        : constraints.maxWidth,
+                                    child: Column(
+                                      children: [
                                 const Padding(
                                   padding: EdgeInsets.symmetric(
                                     horizontal: 16,
@@ -685,7 +693,11 @@ class _MissingItemsPageState extends State<MissingItemsPage> {
                                           },
                                         ),
                                 ),
-                              ],
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ),
