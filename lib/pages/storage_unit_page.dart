@@ -26,6 +26,80 @@ class StorageUnitPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.sizeOf(context).width < 700;
+
+    final actions = [
+      _ActionCard(
+        icon: Icons.inventory_2_outlined,
+        title: 'ספירת מלאי',
+        subtitle: 'המלאי שנקלט בקריאה האחרונה',
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => InventoryPage(
+                siteName: siteName,
+                storageCode: storageCode,
+                storageName: storageName,
+              ),
+            ),
+          );
+        },
+      ),
+      _ActionCard(
+        icon: Icons.warning_amber_outlined,
+        title: 'ציוד חסר',
+        subtitle: '$missingItems פריטים | $missingValue',
+        color: Colors.red,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MissingItemsPage(
+                siteName: siteName,
+                storageCode: storageCode,
+                storageName: storageName,
+              ),
+            ),
+          );
+        },
+      ),
+      _ActionCard(
+        icon: Icons.access_time,
+        title: 'מלאי שלא זז',
+        subtitle: 'ציוד שלא נראה תקופה ארוכה',
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DeadStockPage(
+                siteName: siteName,
+                storageCode: storageCode,
+                storageName: storageName,
+              ),
+            ),
+          );
+        },
+      ),
+      _ActionCard(
+        icon: Icons.move_to_inbox_outlined,
+        title: 'ציוד שזוהה ממחסן אחר',
+        subtitle: 'ציוד שנקלט ומשויך למחסן אחר',
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DetectedFromOtherPage(
+                siteName: siteName,
+                storageCode: storageCode,
+                storageName: storageName,
+              ),
+            ),
+          );
+        },
+      ),
+    ];
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -34,101 +108,53 @@ class StorageUnitPage extends StatelessWidget {
           title: Text(storageCode),
           centerTitle: true,
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(24),
+        body: SingleChildScrollView(
+          padding: EdgeInsets.all(isMobile ? 12 : 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(clientName, style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 6),
-              Text(siteName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
-              Text(storageName, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: _ActionCard(
-                      icon: Icons.inventory_2_outlined,
-                      title: 'ספירת מלאי',
-                      subtitle: 'המלאי שנקלט בקריאה האחרונה',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => InventoryPage(
-                              siteName: siteName,
-                              storageCode: storageCode,
-                              storageName: storageName,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ActionCard(
-                      icon: Icons.warning_amber_outlined,
-                      title: 'ציוד חסר',
-                      subtitle: '$missingItems פריטים | $missingValue',
-                      color: Colors.red,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => MissingItemsPage(
-                              siteName: siteName,
-                              storageCode: storageCode,
-                              storageName: storageName,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ActionCard(
-                      icon: Icons.access_time,
-                      title: 'מלאי שלא זז',
-                      subtitle: 'ציוד שלא נראה תקופה ארוכה',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => DeadStockPage(
-                              siteName: siteName,
-                              storageCode: storageCode,
-                              storageName: storageName,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ActionCard(
-                      icon: Icons.move_to_inbox_outlined,
-                      title: 'ציוד שזוהה ממחסן אחר',
-subtitle: 'ציוד שנקלט ומשויך למחסן אחר',
-onTap: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => DetectedFromOtherPage(
-        siteName: siteName,
-        storageCode: storageCode,
-        storageName: storageName,
-      ),
-    ),
-  );
-},
-                    ),
-                  ),
-                ],
+              Text(
+                clientName,
+                style: const TextStyle(fontSize: 16),
               ),
+              const SizedBox(height: 6),
+              Text(
+                siteName,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                storageName,
+                style: TextStyle(
+                  fontSize: isMobile ? 24 : 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              if (isMobile)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final action in actions) ...[
+                      action,
+                      const SizedBox(height: 12),
+                    ],
+                  ],
+                )
+              else
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (int i = 0; i < actions.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 12),
+                      Expanded(child: actions[i]),
+                    ],
+                  ],
+                ),
             ],
           ),
         ),
@@ -155,6 +181,7 @@ class _ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveColor = color ?? Colors.blueGrey;
+
     return Card(
       child: InkWell(
         onTap: onTap,
@@ -162,14 +189,26 @@ class _ActionCard extends StatelessWidget {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              Icon(icon, size: 38, color: effectiveColor),
+              Icon(
+                icon,
+                size: 38,
+                color: effectiveColor,
+              ),
               const SizedBox(height: 12),
               Text(
                 title,
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: effectiveColor),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: effectiveColor,
+                ),
               ),
               const SizedBox(height: 8),
-              Text(subtitle, textAlign: TextAlign.center),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),

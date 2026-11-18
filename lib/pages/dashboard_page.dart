@@ -13,6 +13,7 @@ import 'select_storage_page.dart';
 import 'inactive_items_page.dart';
 import 'site_page.dart';
 import 'all_sites_page.dart';
+import 'inventory_report_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -477,6 +478,18 @@ debugPrint('EXCEL MISSING ROWS: ${missingRows.length}');
     label: const Text('ייצוא מלאי לאקסל'),
   ),
 ),
+const SizedBox(height: 10),
+Align(
+  alignment: Alignment.centerRight,
+  child: ElevatedButton.icon(
+    onPressed: () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const InventoryReportPage()),
+    ),
+    icon: const Icon(Icons.table_view_outlined),
+    label: const Text('צפייה בדוח מלאי'),
+  ),
+),
 const SizedBox(height: 16),
 
 ElevatedButton.icon(
@@ -494,42 +507,55 @@ ElevatedButton.icon(
 
 const SizedBox(height: 16),
 
-                        Row(
-                          children: [
-                            Expanded(
-                              child: KpiCard(
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isMobile = constraints.maxWidth < 700;
+                            final cards = <Widget>[
+                              KpiCard(
                                 icon: Icons.location_on_outlined,
                                 title: 'אתרים עם חוסרים',
                                 value: '${sites.length}',
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: KpiCard(
+                              KpiCard(
                                 icon: Icons.warning_amber_outlined,
                                 title: 'פריטים חסרים',
                                 value: '$totalMissingItems',
                                 color: Colors.red,
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: KpiCard(
+                              KpiCard(
                                 icon: Icons.payments_outlined,
                                 title: 'שווי ציוד חסר',
                                 value: money(totalMissingValue),
                                 color: Colors.red,
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Expanded(
-                              child: KpiCard(
+                              const KpiCard(
                                 icon: Icons.schedule,
                                 title: 'עודכן לאחרונה',
                                 value: '--:--',
                               ),
-                            ),
-                          ],
+                            ];
+                            if (isMobile) {
+                              final cardWidth = (constraints.maxWidth - 12) / 2;
+                              return Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: cards
+                                    .map((card) => SizedBox(
+                                          width: cardWidth,
+                                          child: card,
+                                        ))
+                                    .toList(),
+                              );
+                            }
+                            return Row(
+                              children: [
+                                for (var i = 0; i < cards.length; i++) ...[
+                                  if (i > 0) const SizedBox(width: 12),
+                                  Expanded(child: cards[i]),
+                                ],
+                              ],
+                            );
+                          },
                         ),
                         const SizedBox(height: 16),
                         const Text(
@@ -541,8 +567,17 @@ const SizedBox(height: 16),
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
-  height: 400,
-                          child: SitesTable(
+                          height: 400,
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: SizedBox(
+                                  width: constraints.maxWidth < 800
+                                      ? 800
+                                      : constraints.maxWidth,
+                                  height: constraints.maxHeight,
+                                  child: SitesTable(
                             sites: sites,
                             toInt: toInt,
                             money: money,
@@ -555,6 +590,10 @@ const SizedBox(height: 16),
                                         site['site_name']?.toString() ?? '',
                                     clientName:
                                         site['client_name']?.toString() ?? '',
+                                  ),
+                                ),
+                              );
+                            },
                                   ),
                                 ),
                               );
